@@ -12,6 +12,9 @@ EZP.ACE.hasIcon = "Interface\\Icons\\Ability_Rogue_DualWeild"
 EZP.ACE.defaultMinimapPosition = 200
 EZP.ACE.cannotDetachTooltip = true
 
+--sound
+EZP.WarningSound = "Sound\\Doodad\\G_GongTroll01.wav"
+
 function EZP.ACE:OnClick()
 	if (arg1 == "LeftButton") then
 		if EZP.ConfigFrame:IsVisible() then EZP.ConfigFrame:Hide()
@@ -79,6 +82,8 @@ function EZP:OnEvent()
 				PosX = 200,
 				PosY = -200,
 				Scale = 1,
+				WarnSound = 1,
+				WarnMsg = 1,
 			}
 		end
 
@@ -100,6 +105,7 @@ function EZP:OnEvent()
 		
 	elseif event == "UNIT_INVENTORY_CHANGED" then
 		EZP:UpdateTexture()
+
 	end
 end
 
@@ -524,6 +530,30 @@ function EZP:ConfigFubar()
 					},
 				},
 			},
+			Warning = {
+				name = "Warning",
+				type = "group",
+				desc = "Poison depletion warning.",
+				order = 8,
+				args = {
+					Messagetoggle = {
+					type = 'toggle',
+					name = "Message",
+					desc = "Enable warning message.",
+					get = function () return EZPcfg.WarnMsg end,
+					set = function () EZPcfg.WarnMsg = not EZPcfg.WarnMsg end,
+					order = 1,
+					},
+					Soundtoggle = {
+					type = 'toggle',
+					name = "Sound",
+					desc = "Enable warning sound.",
+					get = function () return EZPcfg.WarnSound end,
+					set = function () EZPcfg.WarnSound = not EZPcfg.WarnSound end,
+					order = 2,
+					},
+				},
+			},
 			scaling = {
 				type = "range",
 				name = "Window Scale",
@@ -537,7 +567,7 @@ function EZP:ConfigFubar()
 				set = function(value)
 					EZPcfg.Scale  = value
 				end,
-				order = 8,
+				order = 9,
 			},
 			apply = {
 				type = 'toggle',
@@ -550,7 +580,7 @@ function EZP:ConfigFubar()
 					EZPcfg.PosY = -200
 					EZP.ConfigFrame:SetPoint("TOPLEFT",EZPcfg.PosX,EZPcfg.PosY) 
 				end,
-				order = 9,
+				order = 10,
 			},
 		},
 	}
@@ -779,7 +809,7 @@ function EZP:SetProfile(profileNum)
 	
 	UIDropDownMenu_SetSelectedID(getglobal("EZPMainHandDD"), EZPcfg.Profile[EZPcfg.CurrentProfile].MainHand+1)
 	UIDropDownMenu_SetSelectedID(getglobal("EZPOffHandDD"), EZPcfg.Profile[EZPcfg.CurrentProfile].OffHand+1)
-	--DEFAULT_CHAT_FRAME:AddMessage("EzPoison: ".."|cFFFFFFFF".."Profile: ".."|cFFCC9900"..EZPcfg.Profile[EZPcfg.CurrentProfile].Name.."|r".."|cFFFFFFFF".." set.".."|r",0.4,0.8,0.4)
+	DEFAULT_CHAT_FRAME:AddMessage("EzPoison: ".."|cFFFFFFFF".."Profile: ".."|cFFCC9900"..EZPcfg.Profile[EZPcfg.CurrentProfile].Name.."|r".."|cFFFFFFFF".." set.".."|r",0.4,0.8,0.4)
 	
 	EZP:UpdateSelection()
 end
@@ -803,9 +833,29 @@ function EZP:UpdateSelection()
 	EZP:UpdateTexture()
 end
 
+function EZP:WarningMessage(hand)
+	if ( EZPcfg.WarnMsg ) then 
+		DEFAULT_CHAT_FRAME:AddMessage("EzPoison: ".."|cFF00FF00"..hand.."Hand poison is out".."|r",0.4,0.8,0.4);
+		UIErrorsFrame:AddMessage(hand.."Hand poison is out", 0, 1, 0);
+	end
+	if ( EZPcfg.WarnSound ) then 
+		PlaySoundFile ( EZP.WarningSound );
+	end
+end
+
 --additonal feature/ hooking temp-enchant OnUpdate function
 function EZP:BuffFrame_Enchant_OnUpdate(elapsed)
 	local hasMainHandEnchant, mainHandExpiration, mainHandCharges, hasOffHandEnchant, offHandExpiration, offHandCharges = GetWeaponEnchantInfo();
+	
+	-- Warning
+	if ( not hasOffHandEnchant and offHandMessage ) then
+		EZP:WarningMessage("Off");
+		offHandMessage = nil;
+	end
+	if ( not hasMainHandEnchant and mainHandMessage ) then
+		EZP:WarningMessage("Main");
+		mainHandMessage = nil;
+	end
 	
 	-- No enchants, kick out early
 	if ( not hasMainHandEnchant and not hasOffHandEnchant ) then
@@ -828,6 +878,7 @@ function EZP:BuffFrame_Enchant_OnUpdate(elapsed)
 		TempEnchant1Icon:SetTexture(textureName);
 		TempEnchant1:Show();
 		hasEnchant = 1;
+		offHandMessage = 1;
 
 		-- Show buff durations if necessary
 		if ( offHandExpiration ) then
@@ -841,8 +892,7 @@ function EZP:BuffFrame_Enchant_OnUpdate(elapsed)
 			TempEnchant1:SetAlpha(BUFF_ALPHA_VALUE);
 		else
 			TempEnchant1:SetAlpha(1.0);
-		end
-		
+		end		
 	end
 	if ( hasMainHandEnchant ) then
 		enchantIndex = enchantIndex + 1;
@@ -852,6 +902,7 @@ function EZP:BuffFrame_Enchant_OnUpdate(elapsed)
 		getglobal(enchantButton:GetName().."Icon"):SetTexture(textureName);
 		enchantButton:Show();
 		hasEnchant = 1;
+		mainHandMessage = 1;
 
 		-- Show buff durations if necessary
 		if ( mainHandExpiration ) then
@@ -917,3 +968,4 @@ BINDING_HEADER_HEAD = "EzPoison"
 SlashCmdList['EZPOISON'] = EzPoisonPromt
 SLASH_EZPOISON1 = '/ezpoison'
 SLASH_EZPOISON2 = '/EzPoison'
+
