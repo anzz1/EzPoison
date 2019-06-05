@@ -17,6 +17,11 @@ EZP.WarningSound = "Sound\\Doodad\\G_GongTroll01.wav"
 
 function EZP.ACE:OnClick()
 	if (arg1 == "LeftButton") then
+		local _, class = UnitClass("player");
+		if(class ~= "ROGUE") then
+			DEFAULT_CHAT_FRAME:AddMessage("EzPoison: ".."|cFFFFFFFFAddon disabled (this character is not a rogue).|r",0.4,0.8,0.4)
+			return
+		end
 		if EZP.ConfigFrame:IsVisible() then EZP.ConfigFrame:Hide()
 		else EZP:UpdateTexture(); EZP.ConfigFrame:Show() end
 	end
@@ -61,51 +66,53 @@ EZP.Work = 	{
 EZP.GetWeaponEnchantInfo = GetWeaponEnchantInfo
 
 function EZP:OnEvent()
-	if event == "BAG_UPDATE" then
-		if arg1 == 0 or arg1 == 1 or arg1 == 2 or arg1 == 3 or arg1 == 4 then
-			EZP:UpdatePoisonCount()
-		end
-		
-	elseif event == "ADDON_LOADED" and arg1 == "EzPoison" then
-		if not EZPcfg then
-			EZPcfg = {
-				Profile ={
-					[1] = {MainHand = 0, OffHand = 0, Name = "Profile 1"},
-					[2] = {MainHand = 0, OffHand = 0, Name = "Profile 2"},
-					[3] = {MainHand = 0, OffHand = 0, Name = "Profile 3"},
-					[4] = {MainHand = 0, OffHand = 0, Name = "Profile 4"},
-					[5] = {MainHand = 0, OffHand = 0, Name = "Profile 5"},
-					[6] = {MainHand = 0, OffHand = 0, Name = "Profile 6"},
-					[7] = {MainHand = 0, OffHand = 0, Name = "Profile 7"},
-				},
-				CurrentProfile = 1,
-				PosX = 200,
-				PosY = -200,
-				Scale = 1,
-				WarnSound = 1,
-				WarnMsg = 1,
-			}
-		end
-
-		EZP.ConfigFrame:ConfigureUI()
-		EZP:SetProfile()
-		EZP:ConfigFubar()
-		EZP.ConfigFrame:SetScript("OnUpdate",EZP.AddonStart)
+	local _, class = UnitClass("player");
+	if(class == "ROGUE") then
+		if event == "BAG_UPDATE" then
+			if arg1 == 0 or arg1 == 1 or arg1 == 2 or arg1 == 3 or arg1 == 4 then
+				EZP:UpdatePoisonCount()
+			end
+			
+		elseif event == "ADDON_LOADED" and arg1 == "EzPoison" then
+			if not EZPcfg then
+				EZPcfg = {
+					Profile ={
+						[1] = {MainHand = 0, OffHand = 0, Name = "Profile 1"},
+						[2] = {MainHand = 0, OffHand = 0, Name = "Profile 2"},
+						[3] = {MainHand = 0, OffHand = 0, Name = "Profile 3"},
+						[4] = {MainHand = 0, OffHand = 0, Name = "Profile 4"},
+						[5] = {MainHand = 0, OffHand = 0, Name = "Profile 5"},
+						[6] = {MainHand = 0, OffHand = 0, Name = "Profile 6"},
+						[7] = {MainHand = 0, OffHand = 0, Name = "Profile 7"},
+					},
+					CurrentProfile = 1,
+					PosX = 200,
+					PosY = -200,
+					Scale = 1,
+					WarnSound = 1,
+					WarnMsg = 1,
+				}
+			end
 	
-	elseif event == "SPELLCAST_START" then
-		EZP.Work.iSCasting = 1
-	
-	elseif event == "SPELLCAST_STOP" or event ==  "SPELLCAST_INTERRUPTED" or event == "SPELLCAST_FAILED" then
-		EZP:UnregisterEvent("SPELLCAST_STOP")
-		EZP:UnregisterEvent("SPELLCAST_START")
-		EZP:UnregisterEvent("SPELLCAST_INTERRUPTED")
-		EZP:UnregisterEvent("SPELLCAST_FAILED")
-		EZP.Work.iSCasting = nil
-		EZP:UpdateTexture()
+			EZP.ConfigFrame:ConfigureUI()
+			EZP:SetProfile()
+			EZP:ConfigFubar()
+			EZP.ConfigFrame:SetScript("OnUpdate",EZP.AddonStart)
 		
-	elseif event == "UNIT_INVENTORY_CHANGED" then
-		EZP:UpdateTexture()
-
+		elseif event == "SPELLCAST_START" then
+			EZP.Work.iSCasting = 1
+		
+		elseif event == "SPELLCAST_STOP" or event ==  "SPELLCAST_INTERRUPTED" or event == "SPELLCAST_FAILED" then
+			EZP:UnregisterEvent("SPELLCAST_STOP")
+			EZP:UnregisterEvent("SPELLCAST_START")
+			EZP:UnregisterEvent("SPELLCAST_INTERRUPTED")
+			EZP:UnregisterEvent("SPELLCAST_FAILED")
+			EZP.Work.iSCasting = nil
+			EZP:UpdateTexture()
+			
+		elseif event == "UNIT_INVENTORY_CHANGED" then
+			EZP:UpdateTexture()
+		end
 	end
 end
 
